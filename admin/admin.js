@@ -38,6 +38,49 @@
     return hit ? decodeURIComponent(hit.slice(name.length + 1)) : '';
   }
 
+  /* ---------- show / hide password ---------- */
+  const EYE_SHOW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" '
+    + 'stroke-linecap="round" stroke-linejoin="round">'
+    + '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/>'
+    + '<circle cx="12" cy="12" r="2.8"/></svg>';
+  const EYE_HIDE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" '
+    + 'stroke-linecap="round" stroke-linejoin="round">'
+    + '<path d="M2 12s3.6-6.5 10-6.5c1.9 0 3.5.6 4.8 1.3M22 12s-3.6 6.5-10 6.5c-1.9 0-3.5-.6-4.8-1.3"/>'
+    + '<path d="M4 20 20 4"/></svg>';
+
+  // Wraps every password box in a relative container and drops a reveal button
+  // into it. Safe to call repeatedly — already-wired inputs are skipped, which
+  // matters because the Account panel is rebuilt whenever the draft reloads.
+  function addPasswordToggles(root) {
+    (root || document).querySelectorAll('input[type=password]:not([data-pw-wired])')
+      .forEach((input) => {
+        input.dataset.pwWired = '1';
+        const wrap = el('div', { className: 'pw-wrap' });
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(input);
+
+        const btn = el('button', { className: 'pw-toggle', type: 'button' });
+        btn.innerHTML = EYE_SHOW;
+        btn.setAttribute('aria-label', 'Show password');
+        btn.title = 'Show password';
+
+        btn.addEventListener('click', () => {
+          const showing = input.type === 'text';
+          input.type = showing ? 'password' : 'text';
+          btn.innerHTML = showing ? EYE_SHOW : EYE_HIDE;
+          const label = showing ? 'Show password' : 'Hide password';
+          btn.setAttribute('aria-label', label);
+          btn.title = label;
+          // Keep the caret where it was rather than dropping to the start.
+          const at = input.value.length;
+          input.focus();
+          try { input.setSelectionRange(at, at); } catch { /* type change race */ }
+        });
+
+        wrap.appendChild(btn);
+      });
+  }
+
   let toastTimer = null;
   function toast(message, bad) {
     const t = $('#toast');
@@ -889,6 +932,7 @@
     holder.appendChild(buildMessagesPanel());
     PAGE_ORDER.forEach((page) => holder.appendChild(buildContentPanel(page)));
     holder.appendChild(buildAccountPanel());
+    addPasswordToggles(holder);
     const wanted = (location.hash || '').replace('#panel-', '');
     showPanel(SCHEMA[wanted] || wanted === 'messages' || wanted === 'account' ? wanted : 'messages');
   }
@@ -1028,6 +1072,9 @@
     e.preventDefault();
     e.returnValue = '';
   });
+
+  // The sign-in and reset forms are static markup, so they can be wired now.
+  addPasswordToggles();
 
   // Resume from the session cookie if there is one; otherwise show sign-in.
   // A failure to authenticate and a failure to build the dashboard are kept

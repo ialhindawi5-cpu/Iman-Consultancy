@@ -26,3 +26,4 @@ yarn-error.log*
 # Throwaway debug and preview pages use a leading underscore
 _*.html
 _*.js
+.vercel

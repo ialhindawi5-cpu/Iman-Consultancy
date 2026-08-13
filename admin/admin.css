@@ -91,6 +91,18 @@ a:hover{color:var(--accent-dark);}
 }
 .auth-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(46,115,168,.14);}
 .auth-form .btn{margin-top:4px;}
+/* show / hide password — the button sits inside the field */
+.pw-wrap{position:relative;display:block;}
+.pw-wrap input{padding-right:44px !important;margin-bottom:0 !important;}
+.auth-form .pw-wrap{margin-bottom:16px;}
+.pw-toggle{
+  position:absolute;right:5px;top:50%;transform:translateY(-50%);
+  background:none;border:0;padding:7px;margin:0;line-height:0;cursor:pointer;
+  color:var(--slate-400);border-radius:var(--radius);
+}
+.pw-toggle:hover{color:var(--accent);}
+.pw-toggle svg{width:19px;height:19px;display:block;}
+
 .auth-msg{font-size:.87rem;margin:14px 0 0;min-height:1.2em;color:var(--bad);}
 .auth-msg.ok{color:var(--ok);}
 
