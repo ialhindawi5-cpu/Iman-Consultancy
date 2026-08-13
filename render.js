@@ -547,4 +547,79 @@ ${personJsonLd(c, o.siteUrl)}
 `;
 }
 
-module.exports = { renderPage, esc, safeImg };
+/* ---------- error pages ---------- */
+
+// Deliberately tolerant of a missing content document: the 500 page has to
+// render even when the reason for the 500 is that the database is unreachable.
+function renderErrorPage(opts) {
+  const o = Object.assign({ status: 404, content: null, siteUrl: '' }, opts || {});
+  const c = o.content || {};
+  const b = c.brand || {};
+  const name = b.text || 'Iman Hindawi';
+  const role = b.role || 'Project Coordination';
+  const mark = b.monogram || 'IH';
+  const contactEmail = (c.contact && c.contact.email) || 'i.alhindawi5@gmail.com';
+
+  const copy = {
+    404: {
+      title: 'Page not found',
+      heading: "That page isn't here.",
+      body: 'The link may be out of date, or the address slightly off. Everything on this site lives on one page — the links below will get you there.',
+    },
+    500: {
+      title: 'Something went wrong',
+      heading: 'Something went wrong at my end.',
+      body: 'This is a fault on the server, not anything you did. Please try again in a moment — if it keeps happening, email me and I will look into it.',
+    },
+  }[o.status] || {
+    title: 'Something went wrong',
+    heading: 'Something went wrong.',
+    body: 'Please try again in a moment.',
+  };
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(copy.title)} — ${esc(name)}</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="${faviconFor(c)}">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body class="errbody">
+
+<main class="errpage">
+  <div class="errcard">
+    <a class="err-brand" href="/">
+      <span class="brand-mark" aria-hidden="true">${esc(mark)}</span>
+      <span class="brand-text">
+        <span class="brand-name">${esc(name)}</span>
+        <span class="brand-role">${esc(role)}</span>
+      </span>
+    </a>
+
+    <p class="err-code" aria-hidden="true">${esc(String(o.status))}</p>
+    <h1>${esc(copy.heading)}</h1>
+    <p class="err-body">${esc(copy.body)}</p>
+
+    <div class="err-actions">
+      <a class="btn btn-primary" href="/">Back to the site</a>
+      <a class="btn btn-ghost" href="mailto:${esc(contactEmail)}">Email me</a>
+    </div>
+
+    <nav class="err-links" aria-label="Sections">
+      <a href="/#services">Services</a>
+      <a href="/#approach">Approach</a>
+      <a href="/#experience">Experience</a>
+      <a href="/#contact">Contact</a>
+    </nav>
+  </div>
+</main>
+
+</body>
+</html>
+`;
+}
+
+module.exports = { renderPage, renderErrorPage, esc, safeImg };

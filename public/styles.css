@@ -511,6 +511,43 @@ img{max-width:100%;display:block;}
 .form-note{font-size:.82rem;color:var(--slate-400);margin:14px 0 0;text-align:center;}
 .form-note.ok{color:#1f7a4d;}
 
+/* ── error pages (404 / 500) ─────────────────────────────── */
+
+.errbody{
+  min-height:100vh;
+  background:
+    radial-gradient(900px 420px at 80% -10%, rgba(46,115,168,.10), transparent 60%),
+    linear-gradient(180deg,#fbfdff 0%,#ffffff 60%);
+}
+.errpage{min-height:100vh;display:grid;place-items:center;padding:40px 24px;}
+.errcard{width:100%;max-width:560px;text-align:center;}
+
+.err-brand{
+  display:inline-flex;align-items:center;gap:12px;color:var(--navy-900);
+  margin-bottom:clamp(34px,6vw,54px);text-align:left;
+}
+.err-brand:hover{color:var(--navy-900);}
+
+.err-code{
+  font-size:clamp(4rem,13vw,6.5rem);font-weight:600;letter-spacing:-.05em;
+  line-height:1;color:#c3d7e7;margin:0 0 .12em;
+}
+.errcard h1{font-size:clamp(1.6rem,4vw,2.2rem);margin-bottom:.5em;}
+.err-body{color:var(--slate-600);margin:0 auto 2em;max-width:44ch;}
+
+.err-actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:2.4em;}
+
+.err-links{
+  display:flex;flex-wrap:wrap;gap:8px 26px;justify-content:center;
+  border-top:1px solid var(--line);padding-top:22px;
+}
+.err-links a{font-size:.9rem;color:var(--slate-600);}
+.err-links a:hover{color:var(--accent);}
+
+@media (max-width:520px){
+  .err-actions .btn{flex:1 1 auto;}
+}
+
 /* ── footer ──────────────────────────────────────────────── */
 
 .site-footer{background:var(--navy-950);color:#8fa3b6;padding:52px 0 40px;}

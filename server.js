@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { SignJWT, jwtVerify } = require('jose');
 const { sql, init } = require('./db');
-const { renderPage, esc } = require('./render');
+const { renderPage, renderErrorPage, esc } = require('./render');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,12 +68,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// Static assets are served before the database is touched. They do not need it,
+// and the 500 page below links to /styles.css — if that request also had to get
+// past a dead database, the error page would render unstyled exactly when it
+// matters most.
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+
 // Make sure the schema exists before anything touches it (cached after the first call).
 app.use(async (req, res, next) => {
   try { await init(); next(); }
   catch (err) {
     console.error('DB init failed:', err.message);
-    res.status(500).json({ error: 'Database unavailable' });
+    // An unreachable database is the most likely 500 there is, so a browser
+    // must get the real error page here rather than a wall of JSON.
+    if (wantsJson(req)) return res.status(500).json({ error: 'Database unavailable' });
+    res.status(500).type('html').send(renderErrorPage({ status: 500, siteUrl: SITE_URL }));
   }
 });
 
@@ -763,11 +773,6 @@ app.get('/sitemap.xml', async (_req, res) => {
 `);
 });
 
-// Static assets. Declared before the catch-all page route so /styles.css and
-// /script.js are served as files rather than rendered as the page.
-app.use('/admin', express.static(path.join(__dirname, 'admin')));
-app.use(express.static(path.join(__dirname, 'public'), { index: false }));
-
 app.get('/', async (req, res) => {
   try {
     const wantsPreview = req.query.preview === '1';
@@ -783,22 +788,40 @@ app.get('/', async (req, res) => {
     res.send(renderPage(content || {}, { preview, siteUrl: SITE_URL }));
   } catch (err) {
     console.error('Render failed:', err.message);
-    res.status(500).type('html').send('<h1>Something went wrong</h1>');
+    res.status(500).type('html').send(renderErrorPage({ status: 500, siteUrl: SITE_URL }));
   }
 });
 
-app.use((req, res) => {
-  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
-  res.redirect(302, '/');
+// A request from the dashboard's fetch() wants JSON; a browser address bar
+// wants a page. Anything under /api is always JSON regardless of headers.
+function wantsJson(req) {
+  if (req.path.startsWith('/api/')) return true;
+  return !String(req.get('accept') || '').includes('text/html');
+}
+
+// Unknown address. This used to bounce silently to the home page, which hid
+// broken links from anyone who followed one.
+app.use(async (req, res) => {
+  if (wantsJson(req)) return res.status(404).json({ error: 'Not found' });
+  let content = null;
+  try { content = await getContent(); } catch { /* branding falls back to defaults */ }
+  res.status(404).type('html').send(renderErrorPage({ status: 404, content, siteUrl: SITE_URL }));
 });
 
 // eslint-disable-next-line no-unused-vars
-app.use((err, req, res, _next) => {
+app.use(async (err, req, res, _next) => {
   console.error('Unhandled error:', err.message);
   const tooBig = err && err.code === 'LIMIT_FILE_SIZE';
-  res.status(tooBig ? 413 : 500).json({
-    error: tooBig ? 'That image is larger than 8 MB.' : 'Something went wrong.',
-  });
+  const status = tooBig ? 413 : 500;
+
+  if (wantsJson(req)) {
+    return res.status(status).json({
+      error: tooBig ? 'That image is larger than 8 MB.' : 'Something went wrong.',
+    });
+  }
+  // No database lookup here — the usual reason for a 500 is that the database
+  // is unreachable, and a failing error page is worse than a plain one.
+  res.status(status).type('html').send(renderErrorPage({ status, siteUrl: SITE_URL }));
 });
 
 // Vercel imports the app; only listen when run directly.
