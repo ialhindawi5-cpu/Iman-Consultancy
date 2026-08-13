@@ -415,6 +415,51 @@ img{max-width:100%;display:block;}
 
 /* ── faq ─────────────────────────────────────────────────── */
 
+/* Testimonials. The section is omitted server-side until at least one exists,
+   so these rules only ever apply to real content. */
+.quotes{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;align-items:start;}
+.quotes-single{grid-template-columns:minmax(0,760px);}
+
+.quote{
+  position:relative;margin:0;background:#fff;
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:30px 30px 26px;
+  transition:border-color .22s ease, box-shadow .28s ease;
+}
+.quote:hover{border-color:#cdd9e4;box-shadow:var(--shadow-md);}
+.quote::before{
+  content:"\201C";position:absolute;top:6px;right:22px;
+  font-size:4.6rem;line-height:1;color:var(--accent);opacity:.14;
+  font-family:Georgia,"Times New Roman",serif;pointer-events:none;
+}
+.quote blockquote{margin:0 0 22px;position:relative;}
+.quote blockquote p{
+  margin:0 0 .8em;font-size:1.02rem;line-height:1.6;color:var(--slate-700);
+}
+.quote blockquote p:last-child{margin-bottom:0;}
+
+.quote figcaption{
+  display:flex;align-items:center;gap:13px;
+  border-top:1px solid var(--line-soft);padding-top:18px;
+}
+.quote-avatar{
+  width:38px;height:38px;flex:none;border-radius:50%;
+  background:var(--navy-900);color:#fff;
+  display:grid;place-items:center;
+  font-size:.95rem;font-weight:600;
+}
+.quote-who{display:flex;flex-direction:column;line-height:1.35;min-width:0;}
+.quote-name{font-size:.95rem;font-weight:600;color:var(--navy-900);}
+.quote-role{font-size:.85rem;color:var(--slate-400);}
+
+/* Draft preview bar — only rendered for a signed-in admin viewing ?preview=1 */
+.preview-banner{
+  position:fixed;left:0;right:0;bottom:0;z-index:200;
+  background:var(--navy-900);color:#fff;
+  padding:12px 20px;text-align:center;font-size:.9rem;
+}
+.preview-banner a{color:#9ecbea;text-decoration:underline;}
+
 .faq{border-top:1px solid var(--line);}
 .faq details{border-bottom:1px solid var(--line);}
 .faq summary{
@@ -446,6 +491,8 @@ img{max-width:100%;display:block;}
 
 .contact-form{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:32px 30px;box-shadow:var(--shadow-sm);}
 .field{margin-bottom:18px;}
+/* Honeypot: off-screen rather than display:none, which some bots skip. */
+.field-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
 .field label{display:block;font-size:.86rem;font-weight:600;color:var(--navy-900);margin-bottom:7px;}
 .field .opt{font-weight:400;color:var(--slate-400);}
 .field input,.field select,.field textarea{
@@ -582,6 +629,7 @@ body.cursor-on.cursor-hide .cursor-ring{opacity:0;}
   .about{grid-template-columns:1fr;}
   /* centred once it sits above the copy — left-aligned it read as misplaced */
   .about-portrait{max-width:290px;margin-left:auto;margin-right:auto;}
+  .quotes,.quotes-single{grid-template-columns:1fr;}
   .contact{grid-template-columns:1fr;}
   .tl-item{grid-template-columns:1fr;gap:6px;}
   .tl-when{padding-top:0;}
@@ -603,6 +651,7 @@ body.cursor-on.cursor-hide .cursor-ring{opacity:0;}
   .step:nth-child(odd)::before{display:block;}
   .tools{grid-template-columns:1fr;}
   .about-portrait{max-width:230px;}
+  .quote{padding:26px 22px 22px;}
   .card-head{padding:22px 20px;gap:14px;}
   .card-h{font-size:1.08rem;}
   .card-panel-content{padding:0 20px 24px;}

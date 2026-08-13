@@ -1,0 +1,241 @@
+{
+  "brand": {
+    "mode": "text",
+    "text": "Iman Hindawi",
+    "role": "Project Coordination",
+    "monogram": "IH",
+    "logo": ""
+  },
+  "nav": {
+    "about": "About",
+    "services": "Services",
+    "approach": "Approach",
+    "engagements": "Ways to work",
+    "experience": "Experience",
+    "cta": "Get in touch"
+  },
+  "hero": {
+    "eyebrow": "Project Coordinator · PMP® · Beirut & Remote",
+    "title": "Projects that land *on time*, on scope, and on record.",
+    "lead": "I'm Iman Hindawi. For more than five years I've kept multi-region IT, infrastructure and data projects moving — planning the work, chasing the blockers, and giving leadership one honest view of where things actually stand.",
+    "ctaPrimary": "Start a project",
+    "ctaSecondary": "See how I work",
+    "stats": [
+      { "value": "5+", "label": "Years coordinating delivery" },
+      { "value": "PMP®", "label": "Certified project professional" },
+      { "value": "Multi-region", "label": "Distributed teams & vendors" },
+      { "value": "Power BI", "label": "Reporting leadership reads" }
+    ]
+  },
+  "why": {
+    "eyebrow": "The problem",
+    "heading": "Most projects don't fail on skill. They fail on follow-up.",
+    "lead": "The work is understood, the team is capable — and yet the deadline moves. Usually because nobody owns the space between the tasks: the handovers, the approvals sitting in someone's inbox, the risk everyone saw coming but no one logged.",
+    "body": "That space is what I own. I put a plan behind the intent, a cadence behind the plan, and a single source of truth behind the status — so the project stops depending on who remembered what."
+  },
+  "about": {
+    "eyebrow": "About",
+    "heading": "Iman Hindawi",
+    "lead": "PMP®-certified project coordinator and data analyst based in Beirut, working with teams across the region and remotely.",
+    "body1": "My background sits in two places that rarely meet: the discipline of formal project management — work breakdown, risk, budget, governance — and the hands-on analytics side, building the dashboards that make progress visible. That combination is why my status reports tend to survive contact with a sceptical stakeholder.",
+    "body2": "I've coordinated infrastructure rollouts across regions for a fintech, built reporting systems for a humanitarian programme, and run product delivery for software teams. Different industries, same job: make sure the thing that was promised actually ships.",
+    "note": "Beirut, Lebanon · working remotely worldwide",
+    "image": "",
+    "creds": [
+      "PMP® — Project Management Professional",
+      "Project coordination across IT, infrastructure & product",
+      "Data analytics & BI reporting",
+      "English & Arabic"
+    ]
+  },
+  "services": {
+    "eyebrow": "Services",
+    "heading": "Four ways I bring projects under control",
+    "sub": "Take one, or the whole delivery function. Most engagements start with coordination and grow into reporting.",
+    "hint": "Select a service to see what's included.",
+    "items": [
+      {
+        "title": "Project Coordination & Delivery",
+        "desc": "Day-to-day ownership of everything that has to happen between kickoff and sign-off.",
+        "list": [
+          "Work breakdown, milestones & realistic timelines",
+          "Task tracking, follow-ups and blocker escalation",
+          "Stakeholder updates & weekly status reporting",
+          "Risk log, budget tracking and forecasting"
+        ]
+      },
+      {
+        "title": "PMO Setup & Process",
+        "desc": "Standing up the way your team runs projects, so it survives after I leave.",
+        "list": [
+          "Project templates & documentation standards",
+          "Workflow design in Jira, Zoho, Asana or Odoo",
+          "Governance, meeting cadence & escalation paths",
+          "Team onboarding onto the new system"
+        ]
+      },
+      {
+        "title": "Data Analysis & Reporting",
+        "desc": "Turning scattered project data into the one view a decision can be made from.",
+        "list": [
+          "Power BI & Tableau dashboards",
+          "Power Query cleaning & data modelling",
+          "KPI definition and progress analytics",
+          "Automated recurring reports"
+        ]
+      },
+      {
+        "title": "Business & Requirements Analysis",
+        "desc": "Getting the scope right on paper before it gets expensive in build.",
+        "list": [
+          "Stakeholder interviews & requirement gathering",
+          "BRDs, PRDs and scope documents",
+          "Process mapping & gap analysis",
+          "Acceptance criteria and UAT support"
+        ]
+      }
+    ]
+  },
+  "approach": {
+    "eyebrow": "Approach",
+    "heading": "How an engagement runs",
+    "sub": "Same four beats every time, whether it's a six-week rollout or a year-long programme.",
+    "steps": [
+      {
+        "title": "Discover",
+        "body": "We map the goal, the constraints, every stakeholder who can say no, and what \"done\" actually means. You get a written scope before anyone commits."
+      },
+      {
+        "title": "Plan",
+        "body": "A work breakdown with an owner on every task, a timeline built from real capacity rather than optimism, and a risk log with mitigations already assigned."
+      },
+      {
+        "title": "Coordinate",
+        "body": "I run the cadence — standups, follow-ups, vendor chasing, approvals unblocked. Nothing sits waiting on someone remembering to send it."
+      },
+      {
+        "title": "Report",
+        "body": "One dashboard and one weekly note: progress against plan, spend, live risks, and the decisions that need you this week. No surprises at the deadline."
+      }
+    ]
+  },
+  "engagements": {
+    "eyebrow": "Ways to work together",
+    "heading": "Pick the shape that fits the problem",
+    "tiers": [
+      {
+        "title": "Project engagement",
+        "meta": "Fixed scope · fixed timeline",
+        "body": "End-to-end coordination of one defined project, from kickoff to handover. Best when you know what you're building and need someone to land it.",
+        "flag": ""
+      },
+      {
+        "title": "Monthly retainer",
+        "meta": "Ongoing · agreed days per week",
+        "body": "I act as your project coordinator across everything in flight — planning, cadence, reporting and risk — without the cost of a full-time hire.",
+        "flag": "Most common"
+      },
+      {
+        "title": "Setup sprint",
+        "meta": "2–4 weeks · advisory",
+        "body": "A short, intensive engagement to stand up your PMO: templates, tooling, reporting and governance, then handover to your own team.",
+        "flag": ""
+      }
+    ]
+  },
+  "experience": {
+    "eyebrow": "Experience",
+    "heading": "Where the five years came from",
+    "items": [
+      {
+        "when": "Now",
+        "title": "Independent project coordination",
+        "body": "Consulting for teams that need delivery structure — coordination, PMO setup, reporting and requirements work, remote across time zones."
+      },
+      {
+        "when": "Recently",
+        "title": "Project Manager — technology & product delivery",
+        "body": "Owning requirements and delivery for software products: scoping, documentation, sprint coordination and stakeholder alignment between business and engineering."
+      },
+      {
+        "when": "Previously",
+        "title": "Project Coordinator — Areeba (Fintech)",
+        "body": "Coordinated IT infrastructure projects across regions: aligning stakeholders, defining timelines and milestones, tracking budgets and reporting progress to leadership."
+      },
+      {
+        "when": "Previously",
+        "title": "Data & reporting — UNRWA",
+        "body": "Built Activity Info data-collection forms and Power BI dashboards, shaping and transforming programme data through Power Query for field and management reporting."
+      }
+    ],
+    "toolGroups": [
+      {
+        "title": "Planning & tracking",
+        "tools": ["MS Project", "Jira", "Zoho Projects", "Asana", "Odoo", "Trello"]
+      },
+      {
+        "title": "Reporting & data",
+        "tools": ["Power BI", "Tableau", "Power Query", "Excel", "Activity Info", "KoboToolbox"]
+      },
+      {
+        "title": "Documentation & collaboration",
+        "tools": ["Confluence", "SharePoint", "Notion", "MS Teams", "Slack"]
+      }
+    ]
+  },
+  "testimonials": {
+    "eyebrow": "Testimonials",
+    "heading": "What clients say",
+    "sub": "",
+    "items": []
+  },
+  "faq": {
+    "eyebrow": "Questions",
+    "heading": "Before you get in touch",
+    "items": [
+      {
+        "q": "Do you work remotely?",
+        "a": "Yes — most engagements are fully remote, with working hours overlapping your team. I'm based in Beirut and can travel for kickoffs or key milestones where it matters."
+      },
+      {
+        "q": "What size of project do you take on?",
+        "a": "Anything from a single six-week rollout to a portfolio of parallel workstreams. If a project is too small to need me, I'll tell you that in the first call."
+      },
+      {
+        "q": "Can you work inside our existing tools?",
+        "a": "Almost always. I work in Jira, MS Project, Zoho, Asana, Odoo, Trello and plain spreadsheets. If your process is working, I fit into it rather than replacing it."
+      },
+      {
+        "q": "How does an engagement start?",
+        "a": "A 30-minute call to understand the project and the constraints, then a short written proposal: scope, cadence, deliverables and cost. No obligation on either side until that's agreed."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "heading": "Tell me what's slipping.",
+    "lead": "Send a few lines about the project, the deadline and what's in the way. I'll reply within one working day with either a plan or an honest \"that's not me\".",
+    "email": "i.alhindawi5@gmail.com",
+    "location": "Beirut, Lebanon — available remote worldwide",
+    "replyTime": "Replies within one working day",
+    "formNote": "Sent straight to my inbox — nothing is shared.",
+    "services": [
+      "Project coordination & delivery",
+      "PMO setup & process",
+      "Data analysis & reporting",
+      "Business & requirements analysis",
+      "Not sure yet"
+    ]
+  },
+  "footer": {
+    "role": "Project Coordination & Delivery Consulting"
+  },
+  "seo": {
+    "allowIndexing": "false",
+    "title": "Iman Hindawi — Project Coordination & Delivery Consulting",
+    "description": "PMP®-certified project coordinator with 5+ years delivering multi-region IT, infrastructure and data projects. Project coordination, PMO setup, reporting dashboards and requirements analysis.",
+    "ogDescription": "Structure, cadence and clear reporting for projects that can't slip. PMP®-certified, 5+ years, remote worldwide.",
+    "image": "",
+    "searchConsole": ""
+  }
+}

@@ -245,26 +245,43 @@
         return;
       }
 
-      var subject = 'Project enquiry — ' + service.value;
-      var bodyLines = [
-        'Name: ' + name.value.trim(),
-        'Email: ' + email.value.trim(),
-        'Company: ' + (company.value.trim() || '—'),
-        'Service: ' + service.value,
-        '',
-        message.value.trim()
-      ];
+      var button = form.querySelector('button[type="submit"]');
+      var label = button ? button.textContent : '';
+      if (button) { button.disabled = true; button.textContent = 'Sending…'; }
+      if (note) { note.classList.remove('ok'); note.textContent = 'Sending…'; }
 
-      var href = 'mailto:' + CONTACT_EMAIL +
-        '?subject=' + encodeURIComponent(subject) +
-        '&body=' + encodeURIComponent(bodyLines.join('\n'));
-
-      window.location.href = href;
-
-      if (note) {
-        note.classList.add('ok');
-        note.textContent = 'Opening your email app… if nothing happens, write to ' + CONTACT_EMAIL;
-      }
+      fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.value.trim(),
+          email: email.value.trim(),
+          company: company.value.trim(),
+          service: service.value,
+          message: message.value.trim(),
+          website: form.elements.website ? form.elements.website.value : ''
+        })
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (body) {
+          if (!r.ok) throw new Error(body.error || 'Message could not be sent.');
+          return body;
+        });
+      }).then(function () {
+        form.reset();
+        if (note) {
+          note.classList.add('ok');
+          note.textContent = 'Thank you — your message is with me. I’ll reply within one working day.';
+        }
+      }).catch(function (err) {
+        if (note) {
+          note.classList.remove('ok');
+          // Always leave a way through if the form itself is broken.
+          note.textContent = (err.message || 'Message could not be sent.') +
+            ' You can also email ' + CONTACT_EMAIL + '.';
+        }
+      }).finally(function () {
+        if (button) { button.disabled = false; button.textContent = label; }
+      });
     });
   }
 
