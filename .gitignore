@@ -1,0 +1,28 @@
+# OS junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node — nothing needs it today, but keep it out if tooling is ever added
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Secrets / local config
+.env
+.env.*
+
+# Deployment metadata
+.vercel/
+.netlify/
+
+# Throwaway debug and preview pages use a leading underscore
+_*.html
+_*.js
