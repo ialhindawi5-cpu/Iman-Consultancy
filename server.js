@@ -20,6 +20,28 @@ const { renderPage, renderErrorPage, esc } = require('./render');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/* ------------------------------------------------------------------
+ *  Express 4 does not forward a rejected promise out of an async route
+ *  handler. It surfaces as an unhandled rejection, which takes the whole
+ *  process down — so a single transient database error killed the server
+ *  instead of returning a 500. Wrapping handlers as they are registered
+ *  routes those rejections into the error middleware like any other
+ *  failure. Installed before any route is declared, so it covers them all.
+ *  Error-handling middleware (arity 4) is left alone.
+ * ------------------------------------------------------------------ */
+function wrapAsync(handler) {
+  if (typeof handler !== 'function' || handler.length >= 4) return handler;
+  const wrapped = function (req, res, next) {
+    return Promise.resolve(handler(req, res, next)).catch(next);
+  };
+  Object.defineProperty(wrapped, 'name', { value: handler.name });
+  return wrapped;
+}
+['get', 'post', 'put', 'patch', 'delete', 'all', 'use'].forEach((method) => {
+  const original = app[method].bind(app);
+  app[method] = (...args) => original(...args.map(wrapAsync));
+});
+
 const OWNER_EMAIL = process.env.ADMIN_EMAIL || 'i.alhindawi5@gmail.com';
 const UPLOAD_DIR = path.join(__dirname, 'public', 'assets', 'uploads');
 const SITE_URL = (process.env.SITE_URL || 'https://iman-hindawi-consultancy.vercel.app').replace(/\/$/, '');
@@ -268,6 +290,30 @@ async function getNotifyEmail() {
   return rows[0] ? rows[0].email : OWNER_EMAIL;
 }
 
+async function sendReviewNotification(review) {
+  const transport = getTransport();
+  if (!transport) {
+    console.log(`\n  [DEV] Review awaiting approval from ${review.name}: ${review.quote}\n`);
+    return;
+  }
+  const to = await getNotifyEmail();
+  const who = [review.role, review.company].filter(Boolean).join(', ');
+  await transport.sendMail({
+    from: `"Website review" <${process.env.GMAIL_USER}>`,
+    to,
+    replyTo: review.email || undefined,
+    subject: `New review awaiting approval — ${review.name}`,
+    text: `${review.name}${who ? ` (${who})` : ''}\n`
+      + `${review.rating ? `Rating: ${review.rating}/5\n` : ''}\n${review.quote}\n\n`
+      + `It is NOT on the site yet. Approve or reject it in the dashboard: ${SITE_URL}/admin/#panel-reviews`,
+    html: `<p><strong>${esc(review.name)}</strong>${who ? ` — ${esc(who)}` : ''}`
+      + `${review.rating ? `<br>Rating: ${review.rating}/5` : ''}</p>`
+      + `<p style="white-space:pre-wrap">${esc(review.quote)}</p>`
+      + `<p>It is <strong>not</strong> on the site yet — `
+      + `<a href="${esc(SITE_URL)}/admin/#panel-reviews">approve or reject it</a>.</p>`,
+  });
+}
+
 async function sendContactNotification(msg) {
   const transport = getTransport();
   if (!transport) {
@@ -415,20 +461,38 @@ async function storeImageBuffer(baseName, buffer, contentType, req) {
   const filename = `${String(baseName).replace(/[^a-z0-9_-]/gi, '')}-${Date.now()}${ext}`;
   const oidcToken = getOidcToken(req);
 
-  if (oidcToken && BLOB_STORE_ID) {
+  // A read-write token is tried first. Connecting a Blob store in the Vercel
+  // dashboard only sets BLOB_STORE_ID, and the OIDC token it is meant to pair
+  // with is not injected into every runtime — so relying on OIDC alone left
+  // uploads failing in production with a misleading "not configured" message.
+  if (process.env.BLOB_READ_WRITE_TOKEN || oidcToken) {
     const { put } = require('@vercel/blob');
-    const blob = await put(`uploads/${filename}`, buffer, {
-      access: 'public', contentType, storeId: BLOB_STORE_ID, oidcToken,
-    });
-    return blob.url;
-  }
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const { put } = require('@vercel/blob');
-    const blob = await put(`uploads/${filename}`, buffer, { access: 'public', contentType });
-    return blob.url;
+    const opts = { access: 'public', contentType };
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      // Passed explicitly on purpose. The library checks options.token first
+      // but only reads BLOB_READ_WRITE_TOKEN from the environment *after* it
+      // has tried OIDC — so whenever BLOB_STORE_ID is also present (Vercel
+      // sets it when you connect a store) the token would lose to an OIDC
+      // path that is not enabled in every environment.
+      opts.token = process.env.BLOB_READ_WRITE_TOKEN;
+    } else {
+      opts.oidcToken = oidcToken;
+      opts.storeId = BLOB_STORE_ID;
+    }
+    try {
+      const blob = await put(`uploads/${filename}`, buffer, opts);
+      return blob.url;
+    } catch (err) {
+      // Surface the real reason instead of a generic 500.
+      throw new Error(`Upload to Vercel Blob failed: ${err.message}`);
+    }
   }
   if (process.env.VERCEL) {
-    throw new Error('Image storage is not configured. In Vercel: Storage → Blob → Connect to Project, then redeploy.');
+    throw new Error(
+      BLOB_STORE_ID
+        ? 'A Blob store is connected but BLOB_READ_WRITE_TOKEN is not set. Add it in Settings → Environment Variables, then redeploy.'
+        : 'Image storage is not configured. In Vercel: Storage → Blob → Connect to Project, then redeploy.'
+    );
   }
   // Local dev only — Vercel's filesystem is read-only at runtime.
   if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -735,6 +799,78 @@ app.post('/api/contact', rateLimit('contact', 5, 15 * 60 * 1000), async (req, re
   res.json({ ok: true });
 });
 
+/* ============================================================
+ *  Visitor reviews — submitted publicly, shown only once approved
+ * ============================================================ */
+
+// Deliberately stricter than the contact form: a review is public-facing
+// content, so the cost of letting a bot through is higher.
+// The limit counts every attempt, including ones rejected for a missing name
+// or too-short quote, so it has to leave room for a person getting the form
+// wrong a couple of times. Anything that does get through still lands as
+// 'pending' and needs approval, so a flood costs moderation time at worst.
+app.post('/api/reviews', rateLimit('review', 8, 60 * 60 * 1000), async (req, res) => {
+  const { name, role, company, rating, quote, email, website } = req.body || {};
+  if (website) return res.json({ ok: true });          // honeypot
+
+  const clean = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  const review = {
+    name: clean(name, 120),
+    role: clean(role, 120),
+    company: clean(company, 160),
+    quote: clean(quote, 1200),
+    email: clean(email, 200),
+  };
+  const stars = Number(rating);
+  review.rating = Number.isInteger(stars) && stars >= 1 && stars <= 5 ? stars : null;
+
+  if (!review.name) return res.status(400).json({ error: 'Please add your name.' });
+  if (review.quote.length < 20) {
+    return res.status(400).json({ error: 'Please write at least a sentence or two.' });
+  }
+  if (review.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(review.email)) {
+    return res.status(400).json({ error: 'That email address does not look right.' });
+  }
+
+  await sql`INSERT INTO reviews (id, name, role, company, rating, quote, email)
+            VALUES (${crypto.randomUUID()}, ${review.name}, ${review.role},
+                    ${review.company}, ${review.rating}, ${review.quote}, ${review.email})`;
+
+  try { await sendReviewNotification(review); }
+  catch (err) { console.error('Review notification failed:', err.message); }
+
+  res.json({ ok: true });
+});
+
+app.get('/api/reviews', requireAuth, async (_req, res) => {
+  const rows = await sql`SELECT * FROM reviews ORDER BY
+    CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
+    created_at DESC LIMIT 300`;
+  res.json(rows);
+});
+
+// Approving publishes straight to the site: the review has been read by a
+// human, and making it wait for a separate publish step would be surprising.
+app.post('/api/reviews/:id/:decision', requireAuth, async (req, res) => {
+  const { id, decision } = req.params;
+  if (!['approve', 'reject', 'pending'].includes(decision)) {
+    return res.status(400).json({ error: 'Unknown decision' });
+  }
+  const status = decision === 'approve' ? 'approved'
+    : decision === 'reject' ? 'rejected' : 'pending';
+  const rows = await sql`UPDATE reviews
+                         SET status = ${status},
+                             decided_at = ${status === 'pending' ? null : new Date()}
+                         WHERE id = ${id} RETURNING id`;
+  if (!rows.length) return res.status(404).json({ error: 'Review not found' });
+  res.json({ ok: true, status });
+});
+
+app.delete('/api/reviews/:id', requireAuth, async (req, res) => {
+  await sql`DELETE FROM reviews WHERE id = ${req.params.id}`;
+  res.json({ ok: true });
+});
+
 app.get('/api/messages', requireAuth, async (_req, res) => {
   const rows = await sql`SELECT * FROM messages ORDER BY created_at DESC LIMIT 200`;
   res.json(rows);
@@ -780,12 +916,20 @@ app.get('/', async (req, res) => {
     const preview = !!admin;
     const content = preview ? await getDraft() : await getContent();
 
+    // Approved reviews are live content, not draft content — approving one in
+    // the dashboard is the decision, so it needs no separate publish step.
+    const reviews = await sql`SELECT name, role, company, rating, quote
+                              FROM reviews WHERE status = 'approved'
+                              ORDER BY decided_at DESC NULLS LAST, created_at DESC
+                              LIMIT 40`;
+
     res.type('html');
+    // Shorter cache than before: an approved review should surface quickly.
     res.setHeader('Cache-Control', preview
       ? 'no-store'
-      : 'public, s-maxage=300, stale-while-revalidate=86400');
+      : 'public, s-maxage=60, stale-while-revalidate=86400');
     if (preview) res.setHeader('X-Preview', '1');
-    res.send(renderPage(content || {}, { preview, siteUrl: SITE_URL }));
+    res.send(renderPage(content || {}, { preview, siteUrl: SITE_URL, reviews }));
   } catch (err) {
     console.error('Render failed:', err.message);
     res.status(500).type('html').send(renderErrorPage({ status: 500, siteUrl: SITE_URL }));

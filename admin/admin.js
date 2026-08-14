@@ -339,7 +339,8 @@
 
     testimonials: {
       title: 'Testimonials',
-      blurb: 'What clients say. The whole section is hidden on the website until you add at least one.',
+      blurb: 'Quotes you add yourself. Reviews left by visitors are approved separately, '
+        + 'under Reviews, and appear in the same scrolling row.',
       cards: [
         {
           fields: [
@@ -359,9 +360,25 @@
                 { key: 'name', label: 'Their name', type: 'text' },
                 { key: 'role', label: 'Their role', type: 'text' },
                 { key: 'company', label: 'Company', type: 'text' },
+                { key: 'rating', label: 'Stars out of 5', type: 'text', hint: 'Optional. Leave blank for no stars.' },
               ],
             },
           }],
+        },
+        {
+          title: 'Let visitors leave a review',
+          fields: [
+            {
+              path: 'testimonials.formEnabled', label: 'Review form', type: 'select',
+              // Strings, not booleans: the <select> writes its value verbatim,
+              // so a boolean would come back as "true"/"false" anyway.
+              options: [['true', 'Shown on the website'], ['false', 'Hidden']],
+              hint: 'When shown, anyone can submit a review. It reaches you under Reviews '
+                + 'and stays off the website until you approve it.',
+            },
+            { path: 'testimonials.formHeading', label: 'Invitation heading', type: 'text' },
+            { path: 'testimonials.formSub', label: 'Invitation line', type: 'textarea' },
+          ],
         },
       ],
     },
@@ -459,6 +476,8 @@
   let content = {};
   let pending = {};
   let messages = [];
+  let reviews = [];
+  let reviewFilter = 'pending';
   let currentPanel = 'messages';
 
   /* ============================================================
@@ -693,6 +712,36 @@
     return panel;
   }
 
+  function buildReviewsPanel() {
+    const panel = el('section', { className: 'panel', id: 'panel-reviews' });
+    const head = el('div', { className: 'panel-head' });
+    head.appendChild(el('h2', { textContent: 'Reviews' }));
+    head.appendChild(el('p', {
+      textContent: 'Reviews left by visitors. Nothing appears on the website until you approve it. '
+        + 'Approving puts it live straight away — there is no separate publish step.',
+    }));
+    panel.appendChild(head);
+
+    const filters = el('div', { className: 'rv-filters' });
+    [['pending', 'Awaiting you'], ['approved', 'On the website'], ['rejected', 'Rejected'], ['all', 'All']]
+      .forEach(([key, label]) => {
+        const b = el('button', {
+          className: 'rv-filter' + (key === 'pending' ? ' active' : ''),
+          type: 'button', textContent: label,
+        });
+        b.dataset.filter = key;
+        b.addEventListener('click', () => {
+          reviewFilter = key;
+          panel.querySelectorAll('.rv-filter').forEach((x) => x.classList.toggle('active', x.dataset.filter === key));
+          renderReviews();
+        });
+        filters.appendChild(b);
+      });
+    panel.appendChild(filters);
+    panel.appendChild(el('div', { id: 'reviewList' }));
+    return panel;
+  }
+
   function buildAccountPanel() {
     const panel = el('section', { className: 'panel', id: 'panel-account' });
     const head = el('div', { className: 'panel-head' });
@@ -728,7 +777,7 @@
    *  Navigation
    * ============================================================ */
   const NAV = [
-    { group: 'Inbox', items: [['messages', 'Messages']] },
+    { group: 'Inbox', items: [['messages', 'Messages'], ['reviews', 'Reviews']] },
     { group: 'Page sections', items: PAGE_ORDER.filter((p) => p !== 'seo' && p !== 'brand').map((p) => [p, SCHEMA[p].title]) },
     { group: 'Site settings', items: [['brand', SCHEMA.brand.title], ['seo', SCHEMA.seo.title], ['account', 'Account']] },
   ];
@@ -745,6 +794,8 @@
         a.dataset.panel = key;
         if (key === 'messages') {
           a.appendChild(el('span', { className: 'badge', id: 'msgBadge', hidden: true }));
+        } else if (key === 'reviews') {
+          a.appendChild(el('span', { className: 'badge', id: 'rvBadge', hidden: true }));
         } else if (SCHEMA[key]) {
           a.appendChild(el('span', { className: 'dot', id: 'dot-' + key, hidden: true, title: 'Unpublished changes' }));
         }
@@ -762,6 +813,7 @@
     $('#sidebar').classList.remove('open');
     $('#drawerToggle').setAttribute('aria-expanded', 'false');
     if (key === 'messages') loadMessages();
+    if (key === 'reviews') loadReviews();
     window.scrollTo(0, 0);
   }
 
@@ -907,6 +959,97 @@
   }
 
   /* ============================================================
+   *  Reviews
+   * ============================================================ */
+  async function loadReviews() {
+    try { reviews = await api('GET', '/api/reviews'); }
+    catch { return; }
+    const waiting = reviews.filter((r) => r.status === 'pending').length;
+    const badge = $('#rvBadge');
+    if (badge) { badge.hidden = !waiting; badge.textContent = String(waiting); }
+    renderReviews();
+  }
+
+  function renderReviews() {
+    const list = $('#reviewList');
+    if (!list) return;
+    const shown = reviewFilter === 'all' ? reviews : reviews.filter((r) => r.status === reviewFilter);
+
+    list.textContent = '';
+    if (!shown.length) {
+      list.appendChild(el('p', {
+        className: 'empty',
+        textContent: reviewFilter === 'pending'
+          ? 'Nothing waiting for you.'
+          : 'Nothing here yet.',
+      }));
+      return;
+    }
+
+    shown.forEach((r) => {
+      const card = el('div', { className: 'msg rv rv-' + r.status });
+
+      const head = el('div', { className: 'msg-head' });
+      head.appendChild(el('span', { className: 'msg-name', textContent: r.name || 'Someone' }));
+      const meta = [r.role, r.company, new Date(r.created_at).toLocaleString()].filter(Boolean).join(' · ');
+      head.appendChild(el('span', { className: 'msg-meta', textContent: meta }));
+      card.appendChild(head);
+
+      const tags = el('div', { className: 'rv-tags' });
+      tags.appendChild(el('span', {
+        className: 'rv-status rv-status-' + r.status,
+        textContent: r.status === 'pending' ? 'Awaiting approval'
+          : r.status === 'approved' ? 'On the website' : 'Rejected',
+      }));
+      if (r.rating) {
+        tags.appendChild(el('span', {
+          className: 'rv-rating',
+          textContent: '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating),
+          title: r.rating + ' out of 5',
+        }));
+      }
+      card.appendChild(tags);
+
+      card.appendChild(el('p', { className: 'msg-body', textContent: r.quote || '' }));
+
+      const actions = el('div', { className: 'msg-actions' });
+      const decide = (decision, label, cls) => {
+        const b = el('button', { className: 'btn ' + cls + ' btn-sm', type: 'button', textContent: label });
+        b.addEventListener('click', async () => {
+          b.disabled = true;
+          try {
+            await api('POST', '/api/reviews/' + r.id + '/' + decision);
+            toast(decision === 'approve'
+              ? 'Approved — it is on the website now.'
+              : decision === 'reject' ? 'Rejected — it stays off the website.'
+                : 'Moved back to awaiting approval.');
+            loadReviews();
+          } catch (err) { toast(err.message, true); b.disabled = false; }
+        });
+        return b;
+      };
+
+      if (r.status !== 'approved') actions.appendChild(decide('approve', 'Approve', 'btn-primary'));
+      if (r.status !== 'rejected') actions.appendChild(decide('reject', 'Reject', 'btn-ghost'));
+      if (r.status !== 'pending') actions.appendChild(decide('pending', 'Undo', 'btn-ghost'));
+      if (r.email) {
+        actions.appendChild(el('a', { className: 'btn btn-ghost btn-sm', href: 'mailto:' + r.email }, ['Reply']));
+      }
+
+      const del = el('button', { className: 'btn btn-danger btn-sm', type: 'button', textContent: 'Delete' });
+      del.addEventListener('click', async () => {
+        if (!confirm('Delete this review permanently?')) return;
+        try { await api('DELETE', '/api/reviews/' + r.id); loadReviews(); }
+        catch (err) { toast(err.message, true); }
+      });
+      actions.appendChild(del);
+
+      card.appendChild(actions);
+      list.appendChild(card);
+    });
+  }
+
+  /* ============================================================
    *  Boot
    * ============================================================ */
   function showAuth() {
@@ -930,11 +1073,12 @@
     const holder = $('#panels');
     holder.textContent = '';
     holder.appendChild(buildMessagesPanel());
+    holder.appendChild(buildReviewsPanel());
     PAGE_ORDER.forEach((page) => holder.appendChild(buildContentPanel(page)));
     holder.appendChild(buildAccountPanel());
     addPasswordToggles(holder);
     const wanted = (location.hash || '').replace('#panel-', '');
-    showPanel(SCHEMA[wanted] || wanted === 'messages' || wanted === 'account' ? wanted : 'messages');
+    showPanel(SCHEMA[wanted] || ['messages', 'reviews', 'account'].includes(wanted) ? wanted : 'messages');
   }
 
   async function startApp(email) {

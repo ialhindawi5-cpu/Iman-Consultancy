@@ -360,4 +360,116 @@
 
     render();
   }
+
+  /* ── testimonial marquee ────────────────────────────────────
+     The CSS animates a fixed -50% slide, so with a fixed duration two
+     cards would crawl and twelve would fly past. Timing it from the
+     measured width keeps the speed constant however many there are.
+     ────────────────────────────────────────────────────────── */
+
+  var PIXELS_PER_SECOND = 55;
+
+  document.querySelectorAll('[data-marquee]').forEach(function (marquee) {
+    var track = marquee.querySelector('.marquee-track');
+    var set = marquee.querySelector('.marquee-set');
+    if (!track || !set) return;
+
+    function pace() {
+      var distance = set.getBoundingClientRect().width;   // one set = the -50% slide
+      if (!distance) return;
+      track.style.setProperty('--marquee-duration', Math.round(distance / PIXELS_PER_SECOND) + 's');
+    }
+    pace();
+    window.addEventListener('resize', pace);
+    // Web fonts landing late change the card widths underneath us.
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(pace);
+  });
+
+  /* ── leave a review ─────────────────────────────────────── */
+  var reviewToggle = document.getElementById('reviewToggle');
+  var reviewForm = document.getElementById('reviewForm');
+  var reviewNote = document.getElementById('reviewNote');
+
+  if (reviewToggle && reviewForm) {
+    reviewToggle.addEventListener('click', function () {
+      var open = reviewForm.hidden;
+      reviewForm.hidden = !open;
+      reviewToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      reviewToggle.textContent = open ? 'Cancel' : 'Write a review';
+      if (open) {
+        var first = reviewForm.querySelector('input, textarea');
+        if (first) first.focus();
+      }
+    });
+
+    reviewForm.addEventListener('input', function (e) {
+      if (e.target.matches('input, textarea')) setFieldError(e.target, '');
+    });
+
+    reviewForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var f = reviewForm.elements;
+      var firstInvalid = null;
+
+      if (!f.name.value.trim()) {
+        setFieldError(f.name, 'Please add your name.');
+        firstInvalid = firstInvalid || f.name;
+      }
+      if (f.quote.value.trim().length < 20) {
+        setFieldError(f.quote, 'A sentence or two, please.');
+        firstInvalid = firstInvalid || f.quote;
+      }
+      if (f.email.value.trim() && !validEmail(f.email.value.trim())) {
+        setFieldError(f.email, 'That email address does not look right.');
+        firstInvalid = firstInvalid || f.email;
+      }
+      if (firstInvalid) { firstInvalid.focus(); return; }
+
+      var rating = reviewForm.querySelector('input[name="rating"]:checked');
+      var payload = {
+        name: f.name.value.trim(),
+        role: f.role.value.trim(),
+        company: f.company.value.trim(),
+        email: f.email.value.trim(),
+        quote: f.quote.value.trim(),
+        rating: rating ? Number(rating.value) : null,
+        website: f.website.value,          // honeypot
+      };
+
+      var btn = reviewForm.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      if (reviewNote) { reviewNote.classList.remove('ok'); reviewNote.textContent = 'Sending…'; }
+
+      try {
+        var res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        var data = null;
+        try { data = await res.json(); } catch (err) { /* empty body */ }
+        if (!res.ok) throw new Error((data && data.error) || 'Could not send that — please try again.');
+
+        reviewForm.reset();
+        reviewForm.hidden = true;
+        reviewToggle.setAttribute('aria-expanded', 'false');
+        reviewToggle.textContent = 'Write a review';
+        if (reviewNote) {
+          reviewNote.classList.add('ok');
+          reviewNote.textContent = '';
+        }
+        // Say plainly that it is not live yet, so nobody refreshes looking for it.
+        var done = document.createElement('p');
+        done.className = 'review-thanks';
+        done.textContent = 'Thank you — your review has been sent to Iman for approval. '
+          + 'It will appear here once approved.';
+        reviewToggle.parentNode.insertAdjacentElement('afterend', done);
+        reviewToggle.hidden = true;
+      } catch (err) {
+        if (reviewNote) { reviewNote.classList.remove('ok'); reviewNote.textContent = err.message; }
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
 })();

@@ -262,6 +262,36 @@ a:hover{color:var(--accent-dark);}
 
 .empty{color:var(--slate-400);font-size:.92rem;padding:24px 0;}
 
+/* ── reviews ─────────────────────────────────────────────── */
+
+.rv-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+.rv-filter{
+  font:inherit;font-size:.86rem;cursor:pointer;
+  padding:7px 14px;border-radius:999px;
+  background:#fff;color:var(--slate-600);
+  border:1px solid var(--line);
+  transition:border-color .16s ease,color .16s ease,background .16s ease;
+}
+.rv-filter:hover{border-color:#c3d3e0;color:var(--navy-900);}
+.rv-filter.active{background:var(--navy-900);border-color:var(--navy-900);color:#fff;}
+
+.msg-actions{flex-wrap:wrap;}
+
+/* A pending review is the one thing in here that needs acting on. */
+.rv-pending{border-left:3px solid #e0a83c;}
+.rv-approved{border-left:3px solid #1f7a4d;}
+.rv-rejected{opacity:.62;}
+
+.rv-tags{display:flex;align-items:center;gap:10px;margin:0 0 10px;flex-wrap:wrap;}
+.rv-status{
+  font-size:.74rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:3px 9px;border-radius:3px;
+}
+.rv-status-pending{background:#fdf3e0;color:#8a5d10;}
+.rv-status-approved{background:#eaf6f0;color:#1f7a4d;}
+.rv-status-rejected{background:#f2f4f7;color:var(--slate-500,#6b7a8a);}
+.rv-rating{color:#e0a83c;letter-spacing:.1em;font-size:.95rem;}
+
 /* ── responsive ──────────────────────────────────────────── */
 @media (max-width:900px){
   .app{grid-template-columns:1fr;}

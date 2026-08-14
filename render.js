@@ -327,15 +327,18 @@ ${groups}
 
 // Renders nothing until at least one testimonial exists, so an empty section
 // never ships as a hollow heading.
-function renderTestimonials(c) {
-  const t = c.testimonials || {};
-  const items = arr(t.items).filter((x) => x && String(x.quote || '').trim());
-  if (!items.length) return '';
+function stars(n) {
+  const r = Number(n);
+  if (!Number.isInteger(r) || r < 1 || r > 5) return '';
+  return `<span class="quote-stars" role="img" aria-label="${r} out of 5">`
+    + '★'.repeat(r) + `<span class="quote-stars-off">${'★'.repeat(5 - r)}</span></span>`;
+}
 
-  const cards = items.map((x) => {
-    const meta = [x.role, x.company].map((s) => String(s || '').trim()).filter(Boolean).join(', ');
-    const initial = String(x.name || '').trim().charAt(0).toUpperCase();
-    return `        <figure class="quote reveal">
+function quoteCard(x) {
+  const meta = [x.role, x.company].map((s) => String(s || '').trim()).filter(Boolean).join(', ');
+  const initial = String(x.name || '').trim().charAt(0).toUpperCase();
+  return `<figure class="quote">
+          ${stars(x.rating)}
           <blockquote>${paras(x.quote)}</blockquote>
           <figcaption>
             ${initial ? `<span class="quote-avatar" aria-hidden="true">${esc(initial)}</span>` : ''}
@@ -345,7 +348,104 @@ ${meta ? `              <span class="quote-role">${esc(meta)}</span>` : ''}
             </span>
           </figcaption>
         </figure>`;
-  }).join('\n\n');
+}
+
+function renderTestimonials(c, reviews) {
+  const t = c.testimonials || {};
+  // Iman's own entries plus anything a visitor submitted that has been approved.
+  const items = arr(t.items)
+    .concat(arr(reviews))
+    .filter((x) => x && String(x.quote || '').trim());
+
+  // Compared as a string: the dashboard's <select> stores "true"/"false".
+  const form = String(t.formEnabled) === 'false' ? '' : `
+      <div class="review-cta reveal">
+        <div class="review-cta-copy">
+          <h3>${esc(t.formHeading || 'Worked with me?')}</h3>
+          <p>${esc(t.formSub || 'Leave a review. I read every one before it appears here.')}</p>
+        </div>
+        <button class="btn btn-ghost" type="button" id="reviewToggle"
+                aria-expanded="false" aria-controls="reviewForm">Write a review</button>
+      </div>
+
+      <form class="review-form reveal" id="reviewForm" hidden novalidate>
+        <div class="rf-grid">
+          <div class="field">
+            <label for="rv-name">Your name</label>
+            <input id="rv-name" name="name" type="text" autocomplete="name" required maxlength="120">
+            <p class="err" data-for="rv-name"></p>
+          </div>
+          <div class="field">
+            <label for="rv-role">Your role <span class="opt">(optional)</span></label>
+            <input id="rv-role" name="role" type="text" autocomplete="organization-title" maxlength="120">
+          </div>
+          <div class="field">
+            <label for="rv-company">Company <span class="opt">(optional)</span></label>
+            <input id="rv-company" name="company" type="text" autocomplete="organization" maxlength="160">
+          </div>
+          <div class="field">
+            <label for="rv-email">Email <span class="opt">(optional, never published)</span></label>
+            <input id="rv-email" name="email" type="email" autocomplete="email" maxlength="200">
+            <p class="err" data-for="rv-email"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="rf-label">Rating</span>
+          <div class="rf-stars" role="radiogroup" aria-label="Rating out of 5">
+${[1, 2, 3, 4, 5].map((n) => `            <label class="rf-star">
+              <input type="radio" name="rating" value="${n}"${n === 5 ? ' checked' : ''}>
+              <span aria-hidden="true">★</span><span class="sr-only">${n} star${n > 1 ? 's' : ''}</span>
+            </label>`).join('\n')}
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="rv-quote">Your review</label>
+          <textarea id="rv-quote" name="quote" rows="5" required maxlength="1200"></textarea>
+          <p class="err" data-for="rv-quote"></p>
+        </div>
+
+        <div class="hp" aria-hidden="true">
+          <label for="rv-website">Leave this empty</label>
+          <input id="rv-website" name="website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+
+        <div class="rf-actions">
+          <button class="btn btn-primary" type="submit">Send review</button>
+          <p class="form-note" id="reviewNote">Reviews are checked before they appear on the site.</p>
+        </div>
+      </form>`;
+
+  // Nothing to scroll through yet — show the invitation on its own.
+  if (!items.length) {
+    if (!form) return '';
+    return `  <section class="section section-alt" id="testimonials">
+    <div class="wrap">
+      <header class="section-head reveal">
+        <p class="eyebrow">${esc(t.eyebrow)}</p>
+        <h2>${esc(t.heading)}</h2>
+${t.sub ? `        <p class="section-sub">${esc(t.sub)}</p>` : ''}
+      </header>
+${form}
+    </div>
+  </section>`;
+  }
+
+  const cards = items.map(quoteCard).join('\n');
+  // The track is rendered twice so the animation can loop seamlessly: it
+  // translates by exactly -50%, at which point the copy sits where the
+  // original started. The duplicate is hidden from assistive tech.
+  const marquee = `      <div class="marquee" data-marquee>
+        <div class="marquee-track">
+          <div class="marquee-set">
+${cards}
+          </div>
+          <div class="marquee-set" aria-hidden="true">
+${cards}
+          </div>
+        </div>
+      </div>`;
 
   return `  <section class="section section-alt" id="testimonials">
     <div class="wrap">
@@ -354,10 +454,12 @@ ${meta ? `              <span class="quote-role">${esc(meta)}</span>` : ''}
         <h2>${esc(t.heading)}</h2>
 ${t.sub ? `        <p class="section-sub">${esc(t.sub)}</p>` : ''}
       </header>
+    </div>
 
-      <div class="quotes${items.length === 1 ? ' quotes-single' : ''}">
-${cards}
-      </div>
+${marquee}
+
+    <div class="wrap">
+${form}
     </div>
   </section>`;
 }
@@ -500,7 +602,7 @@ function personJsonLd(c, siteUrl) {
 /* ---------- page ---------- */
 
 function renderPage(content, opts) {
-  const o = Object.assign({ preview: false, siteUrl: '' }, opts || {});
+  const o = Object.assign({ preview: false, siteUrl: '', reviews: [] }, opts || {});
   const c = content || {};
 
   return `<!DOCTYPE html>
@@ -530,7 +632,7 @@ ${renderEngagements(c)}
 
 ${renderExperience(c)}
 
-${renderTestimonials(c)}
+${renderTestimonials(c, o.reviews)}
 
 ${renderFaq(c)}
 

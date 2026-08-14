@@ -63,6 +63,23 @@ async function doInit() {
 
   // Emailed 6-digit codes: one table for password resets, one for the
   // second factor at sign-in.
+  // Visitor-submitted reviews. Nothing here reaches the website until it is
+  // explicitly approved, so status starts as 'pending' and never defaults open.
+  await sql`CREATE TABLE IF NOT EXISTS reviews (
+    id uuid PRIMARY KEY,
+    name text NOT NULL,
+    role text,
+    company text,
+    rating smallint,
+    quote text NOT NULL,
+    email text,
+    status text NOT NULL DEFAULT 'pending',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    decided_at timestamptz
+  )`;
+  await sql`CREATE INDEX IF NOT EXISTS reviews_status_idx
+            ON reviews (status, created_at DESC)`;
+
   await sql`CREATE TABLE IF NOT EXISTS reset_codes (
     email text PRIMARY KEY,
     code text NOT NULL,

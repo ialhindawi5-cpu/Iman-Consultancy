@@ -21,10 +21,22 @@
     "ctaPrimary": "Start a project",
     "ctaSecondary": "See how I work",
     "stats": [
-      { "value": "5+", "label": "Years coordinating delivery" },
-      { "value": "PMP®", "label": "Certified project professional" },
-      { "value": "Multi-region", "label": "Distributed teams & vendors" },
-      { "value": "Power BI", "label": "Reporting leadership reads" }
+      {
+        "value": "5+",
+        "label": "Years coordinating delivery"
+      },
+      {
+        "value": "PMP®",
+        "label": "Certified project professional"
+      },
+      {
+        "value": "Multi-region",
+        "label": "Distributed teams & vendors"
+      },
+      {
+        "value": "Power BI",
+        "label": "Reporting leadership reads"
+      }
     ]
   },
   "why": {
@@ -171,15 +183,35 @@
     "toolGroups": [
       {
         "title": "Planning & tracking",
-        "tools": ["MS Project", "Jira", "Zoho Projects", "Asana", "Odoo", "Trello"]
+        "tools": [
+          "MS Project",
+          "Jira",
+          "Zoho Projects",
+          "Asana",
+          "Odoo",
+          "Trello"
+        ]
       },
       {
         "title": "Reporting & data",
-        "tools": ["Power BI", "Tableau", "Power Query", "Excel", "Activity Info", "KoboToolbox"]
+        "tools": [
+          "Power BI",
+          "Tableau",
+          "Power Query",
+          "Excel",
+          "Activity Info",
+          "KoboToolbox"
+        ]
       },
       {
         "title": "Documentation & collaboration",
-        "tools": ["Confluence", "SharePoint", "Notion", "MS Teams", "Slack"]
+        "tools": [
+          "Confluence",
+          "SharePoint",
+          "Notion",
+          "MS Teams",
+          "Slack"
+        ]
       }
     ]
   },
@@ -187,7 +219,10 @@
     "eyebrow": "Testimonials",
     "heading": "What clients say",
     "sub": "",
-    "items": []
+    "items": [],
+    "formEnabled": "true",
+    "formHeading": "Worked with me?",
+    "formSub": "Leave a review. I read every one before it appears here."
   },
   "faq": {
     "eyebrow": "Questions",

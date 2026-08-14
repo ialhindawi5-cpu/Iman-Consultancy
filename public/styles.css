@@ -415,10 +415,37 @@ img{max-width:100%;display:block;}
 
 /* ── faq ─────────────────────────────────────────────────── */
 
-/* Testimonials. The section is omitted server-side until at least one exists,
-   so these rules only ever apply to real content. */
-.quotes{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;align-items:start;}
-.quotes-single{grid-template-columns:minmax(0,760px);}
+/* Testimonials. Cards scroll horizontally and forever: the track holds two
+   identical sets and slides by exactly -50%, at which point the second set is
+   sitting where the first began, so the reset is invisible. Duration scales
+   with the number of cards (set from script.js) to keep the speed constant. */
+.marquee{
+  overflow:hidden;position:relative;
+  /* fade the cards out at both edges instead of clipping them dead */
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+}
+.marquee-track{
+  display:flex;width:max-content;
+  animation:marquee var(--marquee-duration,40s) linear infinite;
+}
+.marquee-set{display:flex;gap:22px;padding:6px 11px;}
+
+@keyframes marquee{
+  from{transform:translate3d(0,0,0);}
+  to{transform:translate3d(-50%,0,0);}
+}
+
+/* Pause when someone wants to actually read one. */
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track{animation-play-state:paused;}
+
+.marquee .quote{
+  width:min(420px,78vw);flex:none;
+  /* cards in a row must line up, so they stretch rather than hug content */
+  display:flex;flex-direction:column;
+}
+.marquee .quote blockquote{flex:1;}
 
 .quote{
   position:relative;margin:0;background:#fff;
@@ -451,6 +478,62 @@ img{max-width:100%;display:block;}
 .quote-who{display:flex;flex-direction:column;line-height:1.35;min-width:0;}
 .quote-name{font-size:.95rem;font-weight:600;color:var(--navy-900);}
 .quote-role{font-size:.85rem;color:var(--slate-400);}
+
+.quote-stars{
+  display:block;margin-bottom:14px;letter-spacing:.14em;
+  color:#e0a83c;font-size:1rem;line-height:1;
+}
+.quote-stars-off{color:var(--line);}
+
+/* ── leave a review ──────────────────────────────────────── */
+
+.review-cta{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:18px;margin-top:clamp(34px,5vw,54px);
+  background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:26px 28px;
+}
+.review-cta-copy h3{margin:0 0 .25em;font-size:1.1rem;}
+.review-cta-copy p{margin:0;font-size:.94rem;color:var(--slate-600);}
+
+.review-form{
+  margin-top:16px;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius);padding:28px;
+}
+.rf-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 20px;}
+.rf-label{display:block;font-size:.86rem;font-weight:600;color:var(--navy-900);margin-bottom:7px;}
+
+/* Radio stars: the input stays focusable for keyboard and screen readers, it
+   is only the visual dot that is replaced by the glyph. */
+.rf-stars{display:flex;gap:4px;}
+.rf-star{cursor:pointer;line-height:1;}
+.rf-star input{position:absolute;opacity:0;width:1px;height:1px;}
+.rf-star span[aria-hidden]{
+  font-size:1.7rem;color:var(--line);transition:color .15s ease;display:block;
+}
+.rf-star:hover span[aria-hidden],
+.rf-star:has(input:checked) span[aria-hidden]{color:#e0a83c;}
+/* every star up to the checked one lights up */
+.rf-stars:has(input:checked) .rf-star span[aria-hidden]{color:#e0a83c;}
+.rf-stars .rf-star:has(input:checked) ~ .rf-star span[aria-hidden]{color:var(--line);}
+.rf-star input:focus-visible + span[aria-hidden]{outline:2px solid var(--accent);outline-offset:2px;}
+
+.rf-actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:6px;}
+.rf-actions .form-note{margin:0;text-align:left;}
+
+.review-thanks{
+  margin:16px 0 0;padding:16px 20px;font-size:.95rem;
+  color:#1f7a4d;background:#f2faf6;
+  border:1px solid #cde9db;border-radius:var(--radius);
+}
+
+/* honeypot — off-screen rather than display:none, which some bots skip */
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
+
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
 
 /* Draft preview bar — only rendered for a signed-in admin viewing ?preview=1 */
 .preview-banner{
@@ -628,6 +711,13 @@ body.cursor-on.cursor-hide .cursor-ring{opacity:0;}
   .card-panel-content li{opacity:1;transform:none;transition:none;}
   .cursor-dot,.cursor-ring{display:none;}
   body.cursor-on{cursor:auto;}
+
+  /* An endlessly moving strip is exactly what this setting exists to stop.
+     It becomes a normal swipeable row, and the duplicate set is dropped so
+     the same quotes are not announced twice. */
+  .marquee-track{animation:none;width:auto;}
+  .marquee{overflow-x:auto;-webkit-mask-image:none;mask-image:none;}
+  .marquee-set[aria-hidden="true"]{display:none;}
 }
 
 /* ============================================================
@@ -666,7 +756,9 @@ body.cursor-on.cursor-hide .cursor-ring{opacity:0;}
   .about{grid-template-columns:1fr;}
   /* centred once it sits above the copy — left-aligned it read as misplaced */
   .about-portrait{max-width:290px;margin-left:auto;margin-right:auto;}
-  .quotes,.quotes-single{grid-template-columns:1fr;}
+  .rf-grid{grid-template-columns:1fr;}
+  .review-cta{flex-direction:column;align-items:flex-start;}
+  .review-cta .btn{width:100%;justify-content:center;}
   .contact{grid-template-columns:1fr;}
   .tl-item{grid-template-columns:1fr;gap:6px;}
   .tl-when{padding-top:0;}
@@ -689,6 +781,8 @@ body.cursor-on.cursor-hide .cursor-ring{opacity:0;}
   .tools{grid-template-columns:1fr;}
   .about-portrait{max-width:230px;}
   .quote{padding:26px 22px 22px;}
+  .marquee-set{gap:14px;padding:6px 7px;}
+  .review-form{padding:22px 18px;}
   .card-head{padding:22px 20px;gap:14px;}
   .card-h{font-size:1.08rem;}
   .card-panel-content{padding:0 20px 24px;}
